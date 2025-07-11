@@ -9,7 +9,7 @@ import pedidoRoutes from "./routes/pedido.routes";
 
 export class Server{
     private app: Application;
-    private port: string;
+    private port: number;
     private apiPaths= {
         pago: "/api/pago",
         productos: "/api/productos",
@@ -19,8 +19,7 @@ export class Server{
     };
     constructor(){
         this.app = express();
-        const port = process.env.PORT || 3000;
-        this.port = port.toString();
+        this.port = Number(process.env.PORT) || 3000;
         this.middlewares();
         this.routes();
     }

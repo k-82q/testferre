@@ -3,6 +3,7 @@ import { db } from "../database/conexion";
 import axios from "axios";
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "TU_ACCESS_TOKEN";
+const BASE_URL = process.env.BASE_URL || "https://testferre-production.up.railway.app";
 
 export const actualizarEstadoPedido = async (req: Request, res: Response) => {
   try {
@@ -70,12 +71,12 @@ export const createOrder = async (req: Request, res: Response) => {
       })),
       external_reference: pedidoId.toString(),
       back_urls: {
-        success: "https://thoroughly-helping-cockatoo.ngrok-free.app/index.html",
-        failure: "http://tu-dominio.com/pago-fallido",
-        pending: "http://tu-dominio.com/pago-pendiente",
+        success: `${BASE_URL}/index.html`,
+        failure: `${BASE_URL}/index.html`,
+        pending: `${BASE_URL}/index.html`,
       },
       auto_return: "approved",
-      notification_url: "https://thoroughly-helping-cockatoo.ngrok-free.app/api/pago/webhook"
+      notification_url: `${BASE_URL}/api/pago/webhook`
     };
 
     // Crear preferencia MercadoPago

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vista Vendedor - FERREMAS</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/style_vendedor.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+</head>
+<body>
+    <header>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="logo">FERRE<span>MAS</span></a>
+            <ul class="navbar-nav">
+                <li id="menu-inicio"><a href="index.html" class="nav-link">Inicio</a></li>
+                <li id="menu-productos"><a href="productos.html" class="nav-link">Productos</a></li>
+                <li id="menu-carrito"><a href="carrito.html" class="active">Carrito</a></li>
+                <li id="menu-admin"><a href="admin.html" class="nav-link">Admin</a></li>
+                <li><a href="#" class="nav-link" id="logoutBtn" style="display:none;">Cerrar sesión</a></li>
+            </ul>
+        </div>
+    </nav>
+    </header>
+
+    <div class="container">
+        <!-- Estadísticas -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="pendingOrders">8</div>
+                <div class="stat-label">Pedidos Pendientes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="approvedOrders">15</div>
+                <div class="stat-label">Pedidos Aprobados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="productsInStock">247</div>
+                <div class="stat-label">Productos en Stock</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="lowStockProducts">12</div>
+                <div class="stat-label">Stock Bajo</div>
+            </div>
+        </div>
+
+        <!-- Pestañas -->
+        <div class="tabs">
+            <button class="tab active" onclick="openTab(event, 'products')">
+                <i class="fas fa-box"></i> Productos en Bodega
+            </button>
+            <button class="tab" onclick="openTab(event, 'orders')">
+                <i class="fas fa-clipboard-list"></i> Gestión de Pedidos
+            </button>
+            <button class="tab" onclick="openTab(event, 'dispatch')">
+                <i class="fas fa-truck"></i> Despacho
+            </button>
+        </div>
+
+        <!-- Contenido de Productos -->
+        <div id="products" class="tab-content active">
+            <div class="search-box">
+                <input type="text" placeholder="Buscar productos..." id="productSearch" onkeyup="searchProducts()">
+            </div>
+            <div class="product-grid" id="productGrid">
+                <!-- Los productos se cargarán aquí dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Contenido de Pedidos -->
+        <div id="orders" class="tab-content">
+            <div class="table-container">
+                <h3>Pedidos Pendientes de Aprobación</h3>
+                <table id="ordersTable">
+                    <thead>
+                        <tr>
+                            <th>ID Pedido</th>
+                            <th>Cliente</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <!-- Los pedidos se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Contenido de Despacho -->
+        <div id="dispatch" class="tab-content">
+            <div class="table-container">
+                <h3>Pedidos Listos para Despacho</h3>
+                <table id="dispatchTable">
+                    <thead>
+                        <tr>
+                            <th>ID Pedido</th>
+                            <th>Cliente</th>
+                            <th>Dirección</th>
+                            <th>Tipo Despacho</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dispatchTableBody">
+                        <!-- Los despachos se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver detalles del pedido -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Detalles del Pedido</h2>
+            <div id="orderDetails"></div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-success" onclick="approveOrder()">Aprobar Pedido</button>
+                <button class="btn btn-danger" onclick="rejectOrder()">Rechazar Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para gestionar despacho -->
+    <div id="dispatchModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDispatchModal()">&times;</span>
+            <h2>Gestionar Despacho</h2>
+            <div class="form-group">
+                <label>Asignar a Bodeguero:</label>
+                <select id="bodegueroSelect">
+                    <option value="">Seleccionar bodeguero</option>
+                    <option value="1">Carlos Rodríguez</option>
+                    <option value="2">María González</option>
+                    <option value="3">Pedro Martínez</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notas adicionales:</label>
+                <textarea id="dispatchNotes" rows="3" placeholder="Instrucciones especiales para el despacho..."></textarea>
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="assignToBodeguero()">Asignar a Bodeguero</button>
+                <button class="btn btn-warning" onclick="scheduleDispatch()">Programar Despacho</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+        // Mostrar el botón solo si hay usuario logueado
+        if (localStorage.getItem("usuario")) {
+            document.getElementById("logoutBtn").style.display = "inline-block";
+        }
+
+        // Función de cerrar sesión igual que admin.html
+        document.getElementById("logoutBtn").addEventListener("click", function (e) {
+            e.preventDefault();
+            localStorage.removeItem("usuario"); // Borra los datos del usuario
+            alert("Sesión cerrada");
+            window.location.href = "login.html";
+        });
+        // Productos se cargarán desde la base de datos
+        let products = [];
+
+        let orders = [];
+
+        // Obtener pedidos desde el backend
+        function fetchOrdersFromAPI() {
+            fetch('/api/pedidos')
+                .then(response => response.json())
+                .then(data => {
+                    // Mapear los campos de la base de datos a los usados en el frontend
+                    orders = data.map(order => ({
+                        id: order.id || order.ID || order.Id || order.pedido_id || order.pedidoID,
+                        customer: order.comprador_nombre || order.cliente || order.nombre_cliente || 'Sin nombre',
+                        date: order.fecha ? order.fecha.split('T')[0] : '',
+                        total: order.total || order.Total || 0,
+                        status: order.estado || order.status || 'pending'
+                    }));
+                    loadOrders();
+                    updateStats();
+                })
+                .catch(error => {
+                    console.error('Error al obtener pedidos:', error);
+                });
+        }
+
+        let dispatches = [
+            { id: 1003, customer: 'Carlos Rodríguez', address: 'Av. Providencia 1234, Santiago', type: 'Despacho a domicilio', status: 'ready' },
+            { id: 1005, customer: 'Luis Hernández', address: 'Retiro en tienda', type: 'Retiro en tienda', status: 'ready' }
+        ];
+
+        let currentOrderId = null;
+        let currentDispatchId = null;
+
+        // Función para cambiar pestañas
+        function openTab(evt, tabName) {
+            var i, tabcontent, tabs;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            tabs = document.getElementsByClassName("tab");
+            for (i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove("active");
+            }
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // Cargar productos
+        function loadProducts() {
+            const productGrid = document.getElementById('productGrid');
+            productGrid.innerHTML = '';
+            if (products.length > 0) {
+                // Mostrar el primer producto en consola para ver los campos reales
+                console.log('Primer producto:', products[0]);
+            }
+            products.forEach(product => {
+                // Usar los nombres reales de la base de datos: Nombre, Precio, Descripcion, Imagen
+                const nombre = product.Nombre || 'Sin nombre';
+                const precio = product.Precio || 0;
+                const descripcion = product.Descripcion || '';
+                // Si tienes un campo de stock, cámbialo aquí. Si no, lo dejamos como 'N/A'.
+                const stock = product.Stock !== undefined ? product.Stock : 'N/A';
+                const imagen = product.Imagen || '';
+
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                // Validar si la imagen existe realmente en el servidor
+                let imgHtml = '';
+                if (imagen) {
+                    const imgPath = `assets/img/${imagen}`;
+                    imgHtml = `<img src="${imgPath}" alt="${nombre}" style="max-width:100%;max-height:100px;" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<i class=\'fas fa-tools\' style=\'font-size: 3rem; color: #ccc;\'></i>';">`;
+                } else {
+                    imgHtml = `<i class='fas fa-tools' style='font-size: 3rem; color: #ccc;'></i>`;
+                }
+                productCard.innerHTML = `
+                    <div class="product-image">
+                        ${imgHtml}
+                    </div>
+                    <div class="product-name">${nombre}</div>
+                    <div class="product-price">$${Number(precio).toLocaleString()}</div>
+                    <div class="product-stock">Stock: ${stock}</div>
+                    <div class="product-desc">${descripcion}</div>
+                `;
+                productGrid.appendChild(productCard);
+            });
+        }
+
+        // Cargar pedidos
+        function loadOrders() {
+            const ordersTableBody = document.getElementById('ordersTableBody');
+            ordersTableBody.innerHTML = '';
+            
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>#${order.id}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.date}</td>
+                    <td>$${order.total.toLocaleString()}</td>
+                    <td><span class="status status-${order.status}">${getStatusText(order.status)}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="viewOrder(${order.id})">Ver Detalles</button>
+                        ${order.status === 'pending' ? 
+                            `<button class="btn btn-success" onclick="quickApprove(${order.id})">Aprobar</button>
+                             <button class="btn btn-danger" onclick="quickReject(${order.id})">Rechazar</button>` : 
+                            ''}
+                    </td>
+                `;
+                ordersTableBody.appendChild(row);
+            });
+        }
+
+        // Cargar despachos
+        function loadDispatches() {
+            const dispatchTableBody = document.getElementById('dispatchTableBody');
+            dispatchTableBody.innerHTML = '';
+            
+            dispatches.forEach(dispatch => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>#${dispatch.id}</td>
+                    <td>${dispatch.customer}</td>
+                    <td>${dispatch.address}</td>
+                    <td>${dispatch.type}</td>
+                    <td><span class="status status-${dispatch.status}">${getStatusText(dispatch.status)}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="manageDispatch(${dispatch.id})">Gestionar</button>
+                    </td>
+                `;
+                dispatchTableBody.appendChild(row);
+            });
+        }
+
+        // Buscar productos
+        function searchProducts() {
+            const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+            const filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(searchTerm) || 
+                product.category.toLowerCase().includes(searchTerm) ||
+                product.brand.toLowerCase().includes(searchTerm)
+            );
+            
+            const productGrid = document.getElementById('productGrid');
+            productGrid.innerHTML = '';
+            
+            filteredProducts.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.innerHTML = `
+                    <div class="product-image">
+                        <i class="fas fa-tools" style="font-size: 3rem; color: #ccc;"></i>
+                    </div>
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-price">$${product.price.toLocaleString()}</div>
+                    <div class="product-stock">Stock: ${product.stock} unidades</div>
+                    <div style="margin-top: 10px;">
+                        <span class="status ${product.stock < 10 ? 'status-pending' : 'status-approved'}">
+                            ${product.stock < 10 ? 'Stock Bajo' : 'Disponible'}
+                        </span>
+                    </div>
+                `;
+                productGrid.appendChild(productCard);
+            });
+        }
+
+        // Ver detalles del pedido
+        function viewOrder(orderId) {
+            currentOrderId = orderId;
+            const order = orders.find(o => o.id === orderId);
+            
+            document.getElementById('orderDetails').innerHTML = `
+                <p><strong>ID Pedido:</strong> #${order.id}</p>
+                <p><strong>Cliente:</strong> ${order.customer}</p>
+                <p><strong>Fecha:</strong> ${order.date}</p>
+                <p><strong>Total:</strong> $${order.total.toLocaleString()}</p>
+                <p><strong>Estado:</strong> ${getStatusText(order.status)}</p>
+                <h4>Productos:</h4>
+                <ul>
+                    <li>Taladro Bosch - $89.090 x 1</li>
+                    <li>Martillo Stanley - $25.000 x 1</li>
+                    <li>Destornillador Phillips - $12.000 x 1</li>
+                </ul>
+            `;
+            
+            document.getElementById('orderModal').style.display = 'block';
+        }
+
+        // Gestionar despacho
+        function manageDispatch(dispatchId) {
+            currentDispatchId = dispatchId;
+            document.getElementById('dispatchModal').style.display = 'block';
+        }
+
+        // Aprobar pedido rápido
+        function quickApprove(orderId) {
+            fetch(`/api/pedidos/${orderId}/estado`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: 'aprobado' })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Error al aprobar pedido');
+                return response.json();
+            })
+            .then(() => {
+                fetchOrdersFromAPI();
+                alert('Pedido aprobado exitosamente');
+            })
+            .catch(() => {
+                alert('No se pudo aprobar el pedido');
+            });
+        }
+
+        // Rechazar pedido rápido
+        function quickReject(orderId) {
+            if (confirm('¿Está seguro de rechazar este pedido?')) {
+                fetch(`/api/pedidos/${orderId}/estado`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: 'rechazado' })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error al rechazar pedido');
+                    return response.json();
+                })
+                .then(() => {
+                    fetchOrdersFromAPI();
+                    alert('Pedido rechazado');
+                })
+                .catch(() => {
+                    alert('No se pudo rechazar el pedido');
+                });
+            }
+        }
+
+        // Aprobar pedido desde modal
+        function approveOrder() {
+            if (currentOrderId) {
+                fetch(`/api/pedidos/${currentOrderId}/estado`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: 'aprobado' })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error al aprobar pedido');
+                    return response.json();
+                })
+                .then(() => {
+                    fetchOrdersFromAPI();
+                    closeModal();
+                    alert('Pedido aprobado exitosamente');
+                })
+                .catch(() => {
+                    alert('No se pudo aprobar el pedido');
+                });
+            }
+        }
+
+        // Rechazar pedido desde modal
+        function rejectOrder() {
+            if (confirm('¿Está seguro de rechazar este pedido?')) {
+                if (currentOrderId) {
+                    fetch(`/api/pedidos/${currentOrderId}/estado`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ estado: 'rechazado' })
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Error al rechazar pedido');
+                        return response.json();
+                    })
+                    .then(() => {
+                        fetchOrdersFromAPI();
+                        closeModal();
+                        alert('Pedido rechazado');
+                    })
+                    .catch(() => {
+                        alert('No se pudo rechazar el pedido');
+                    });
+                }
+            }
+        }
+
+        // Asignar a bodeguero
+        function assignToBodeguero() {
+            const bodegueroId = document.getElementById('bodegueroSelect').value;
+            const notes = document.getElementById('dispatchNotes').value;
+            
+            if (!bodegueroId) {
+                alert('Por favor seleccione un bodeguero');
+                return;
+            }
+            
+            alert(`Pedido asignado al bodeguero. Notas: ${notes}`);
+            closeDispatchModal();
+        }
+
+        // Programar despacho
+        function scheduleDispatch() {
+            alert('Despacho programado exitosamente');
+            closeDispatchModal();
+        }
+
+        // Cerrar modales
+        function closeModal() {
+            document.getElementById('orderModal').style.display = 'none';
+            currentOrderId = null;
+        }
+
+        function closeDispatchModal() {
+            document.getElementById('dispatchModal').style.display = 'none';
+            currentDispatchId = null;
+        }
+
+        // Obtener texto del estado
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': 'Pendiente',
+                'approved': 'Aprobado',
+                'rejected': 'Rechazado',
+                'dispatched': 'Despachado',
+                'ready': 'Listo'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Actualizar estadísticas
+        function updateStats() {
+            // Contar pedidos por estado real
+            const pending = orders.filter(o => o.status === 'pendiente' || o.status === 'pending').length;
+            const approved = orders.filter(o => o.status === 'aprobado' || o.status === 'approved' || o.status === 'aceptado').length;
+            const rejected = orders.filter(o => o.status === 'rechazado' || o.status === 'rejected').length;
+            const delivered = orders.filter(o => o.status === 'entregado' || o.status === 'delivered').length;
+            const lowStock = products.filter(p => p.stock < 10).length;
+
+            document.getElementById('pendingOrders').textContent = pending;
+            document.getElementById('approvedOrders').textContent = approved;
+            document.getElementById('lowStockProducts').textContent = lowStock;
+            // Si quieres mostrar rechazados o entregados, puedes agregar más recuadros y asignar aquí
+        }
+
+        // Cerrar sesión
+        function logout() {
+            if (confirm('¿Está seguro de cerrar sesión?')) {
+                alert('Sesión cerrada');
+                // Aquí rediriges al login
+                // window.location.href = 'login.html';
+            }
+        }
+
+        // Cerrar modales al hacer clic fuera
+        window.onclick = function(event) {
+            const orderModal = document.getElementById('orderModal');
+            const dispatchModal = document.getElementById('dispatchModal');
+            
+            if (event.target === orderModal) {
+                closeModal();
+            }
+            if (event.target === dispatchModal) {
+                closeDispatchModal();
+            }
+        }
+
+        // Obtener productos desde el backend
+        function fetchProductsFromAPI() {
+            fetch('/api/productos')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Productos recibidos del backend:', data);
+                    products = data;
+                    loadProducts();
+                    updateStats();
+                })
+                .catch(error => {
+                    console.error('Error al obtener productos:', error);
+                    // Si hay error, puedes mostrar un mensaje o dejar products vacío
+                });
+        }
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchProductsFromAPI();
+            fetchOrdersFromAPI();
+            loadDispatches();
+            updateStats();
+        });
+    </script>
+</body>
+</html>

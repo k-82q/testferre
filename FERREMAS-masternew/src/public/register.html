@@ -1,0 +1,67 @@
+<!-- register.html -->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registro - FERREMAS</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+
+<body class="login-bg">
+  <div class="login-container">
+    <h1>Regístrate en <span class="brand">FERREMAS</span></h1>
+    <form class="form" onsubmit="registrarUsuario(event)">
+      <label for="nombre">Nombre Completo:</label>
+      <input type="text" id="nombre" name="nombre" required />
+
+      <label for="correo">Correo Electrónico:</label>
+      <input type="email" id="correo" name="correo" required />
+
+      <label for="clave">Contraseña:</label>
+      <input type="password" id="clave" name="clave" required />
+
+      <button type="submit">Registrarse</button>
+    </form>
+    <p class="register-link">¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></p>
+  </div>
+
+  <script>
+    // Función para registrar un nuevo usuario
+    const form = document.querySelector("form");
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const nombre = document.getElementById("nombre").value.trim();
+      const correo = document.getElementById("correo").value.trim();
+      const clave = document.getElementById("clave").value.trim();
+
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, correo, clave })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message);
+        setTimeout(() => window.location.href = "login.html", 1200);
+      } else {
+        showToast(data.error, true);
+      }
+    });
+
+    // Función para mostrar mensajes de toast
+function showToast(msg, isError = false) {
+  const toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.className = "toast show" + (isError ? " error" : "");
+  setTimeout(() => {
+    toast.className = "toast"; // Quita todas las clases extra
+    toast.textContent = "";    // Opcional: limpia el texto
+  }, 3500);
+}
+  </script>
+  <div id="toast" class="toast"></div>
+</body>
+
+</html>

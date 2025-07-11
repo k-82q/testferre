@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administrador - Sistema de Ventas</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+
+<body class="admin-bg">
+    <!-- Barra de navegación -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">FERRE<span class="brand">MAS</span></a>
+            <a href="#" class="navbar-brand">Sistema de Ventas</a>
+            <ul class="navbar-nav">
+                <li id="menu-inicio"><a href="index.html">Inicio</a></li>
+                <li id="menu-productos"><a href="productos.html" class="nav-link">Productos</a></li>
+                <li id="menu-carrito"><a href="carrito.html" class="nav-link">Carrito</a></li>
+                <li><a href="#" class="nav-link">Informes</a></li>
+                <li><a href="#" class="nav-link">Ventas</a></li>
+                <li><a href="#" class="nav-link" id="logoutBtn" style="display:none;">Cerrar sesión</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container">
+        <h2 class="mt-4">Crear Usuario</h2>
+        <div class="panel-container">
+            <form id="formCrearUsuario" class="form" style="margin-bottom:2rem;">
+                <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+                    <input type="text" id="nombre" placeholder="Nombre Completo" required>
+                    <input type="email" id="correo" placeholder="Correo" required>
+                    <select id="rol" required>
+                        <option value="">Rol</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Bodeguero">Bodeguero</option>
+                        <option value="Vendedor">Vendedor</option>
+                    </select>
+                    <input type="password" id="clave" placeholder="Contraseña" required>
+                    <button type="submit" class="action-btn">Crear</button>
+                </div>
+            </form>
+        </div>
+        <!-- Usuarios recientes -->
+        <h2 class="mt-4">Usuarios Recientes</h2>
+        <div class="panel-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usuarios-tbody">
+                    <tr>
+                        <td>#501</td>
+                        <td>Roberto Vega</td>
+                        <td>roberto@ejemplo.com</td>
+                        <td>Cliente</td>
+                        <td>05/05/2025</td>
+                        <td>
+                            <button class="btn">Ver</button>
+                            <button class="btn">Editar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>#500</td>
+                        <td>Laura Torres</td>
+                        <td>laura@ejemplo.com</td>
+                        <td>Vendedor</td>
+                        <td>04/05/2025</td>
+                        <td>
+                            <button class="btn">Ver</button>
+                            <button class="btn">Editar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>#499</td>
+                        <td>Daniel Ruiz</td>
+                        <td>daniel@ejemplo.com</td>
+                        <td>Cliente</td>
+                        <td>03/05/2025</td>
+                        <td>
+                            <button class="btn">Ver</button>
+                            <button class="btn">Editar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="text-right mt-2">
+                <a href="#" class="action-btn">Ver todos los usuarios</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar usuario -->
+    <div id="modalEditarUsuario" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModalEditar()">&times;</span>
+            <h2>Editar Usuario</h2>
+            <form id="formEditarUsuario" class="form">
+                <input type="hidden" id="edit-id">
+                <input type="text" id="edit-nombre" placeholder="Nombre Completo" required>
+                <input type="email" id="edit-correo" placeholder="Correo" required>
+                <select id="edit-rol" required>
+                    <option value="Admin">Admin</option>
+                    <option value="Bodeguero">Bodeguero</option>
+                    <option value="Vendedor">Vendedor</option>
+                    <option value="Cliente">Cliente</option>
+                </select>
+                <input type="password" id="edit-clave" placeholder="Nueva Contraseña (opcional)">
+                <button type="submit" class="action-btn">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+
+        //Accesos segun roles
+        const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+
+        // Vistas solo para admin
+        const soloAdmin = ["admin.html", "index.html"];
+        // Vistas solo para cliente
+        const soloCliente = ["carrito.html", "productos.html", "index.html"];
+
+        // Obtén el nombre del archivo actual
+        const archivo = location.pathname.split("/").pop();
+
+        if (!usuario) {
+            // Si no hay usuario logueado, redirige siempre al login
+            window.location.href = "login.html";
+        } else if (soloCliente.includes(archivo) && usuario.rol === "Cliente") {
+            // Si se loguea y es cliente, redirige a inicio
+            window.location.href = "index.html";
+        } else if (soloAdmin.includes(archivo) && usuario.rol !== "Admin") {
+            // Si intenta entrar a admin y no es admin, redirige a inicio
+            window.location.href = "index.html";
+        }
+
+        // Cargar usuarios al inicio
+        async function cargarUsuarios() {
+            const tbody = document.getElementById("usuarios-tbody");
+            tbody.innerHTML = "<tr><td colspan='6'>Cargando...</td></tr>";
+            const res = await fetch("/api/usuarios");
+            const usuarios = await res.json();
+            tbody.innerHTML = "";
+            // Se verifica si hay usuarios
+            usuarios.forEach(u => {
+                tbody.innerHTML += `
+      <tr>
+        <td>${u.id}</td>
+        <td>${u.NombreCompleto}</td>
+        <td>${u.Correo}</td>
+        <td>${u.Rol}</td>
+        <td>-</td>
+        <td>
+          <button class="btn" onclick="editarUsuario(${u.id})">Editar</button>
+          <button class="btn" onclick="eliminarUsuario(${u.id})">Eliminar</button>
+        </td>
+      </tr>
+    `;
+            });
+        }
+        // Formulario para crear usuario
+        document.getElementById("formCrearUsuario").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const nombre = document.getElementById("nombre").value.trim();
+            const correo = document.getElementById("correo").value.trim();
+            const rol = document.getElementById("rol").value;
+            const clave = document.getElementById("clave").value;
+            const res = await fetch("/api/usuarios", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nombre, correo, rol, clave })
+            });
+            const data = await res.json();
+            showToast(data.message || data.error, !res.ok);
+            if (res.ok) {
+                this.reset();
+                cargarUsuarios();
+            }
+        });
+
+        // Función para eliminar usuario
+        async function eliminarUsuario(id) {
+            if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
+            const res = await fetch(`/api/usuarios/${id}`, { method: "DELETE" });
+            const data = await res.json();
+            showToast(data.message || data.error, !res.ok);
+            if (res.ok) cargarUsuarios();
+        }
+
+        // Formulario para editar usuario
+
+        document.getElementById("formEditarUsuario").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const id = document.getElementById("edit-id").value;
+            const nombre = document.getElementById("edit-nombre").value.trim();
+            const correo = document.getElementById("edit-correo").value.trim();
+            const rol = document.getElementById("edit-rol").value;
+            const clave = document.getElementById("edit-clave").value;
+
+            // Validación de campos vacíos
+            if (!nombre || !correo || !rol) {
+                showToast("Todos los campos son obligatorios.", true);
+                return;
+            }
+            // Validación de nombre
+            if (nombre.trim() === "") {
+                showToast("Este campo es obligatorio.", true);
+                return;
+            }
+            // Validación de longitud del nombre
+            if (nombre.length < 3 || nombre.length > 30) {
+                showToast("El nombre debe tener entre 3 y 30 caracteres.", true);
+                return;
+            }
+
+            // Validación de correo
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(correo)) {
+                showToast("Correo electrónico no válido.", true);
+                return;
+            }
+            
+            // Validación de contraseña (solo si se va a cambiar)
+            if (clave) {
+                const strongPass = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{5,}$/;
+                if (!strongPass.test(clave)) {
+                    showToast("La contraseña debe tener al menos 5 caracteres, una mayúscula, una minúscula y un número.", true);
+                    return;
+                }
+            }
+            // Preparar el body de la solicitud
+            const body = { nombre, correo, rol };
+            if (clave) {
+                body.clave = clave;
+            }
+            const res = await fetch(`/api/usuarios/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            showToast(data.message || data.error, !res.ok);
+            if (res.ok) {
+                cerrarModalEditar();
+                cargarUsuarios();
+            }
+        });
+
+        // Función para mostrar mensajes de toast
+
+        function showToast(msg, isError = false) {
+            let toast = document.getElementById("toast");
+            if (!toast) {
+                toast = document.createElement("div");
+                toast.id = "toast";
+                toast.className = "toast";
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.className = "toast show" + (isError ? " error" : "");
+            setTimeout(() => {
+                toast.className = "toast";
+                toast.textContent = "";
+            }, 3000);
+        }
+
+        window.onload = cargarUsuarios;
+
+        //Edicion usuario
+        async function editarUsuario(id) {
+            // Obtén los datos del usuario
+            const res = await fetch(`/api/usuarios`);
+            const usuarios = await res.json();
+            const usuario = usuarios.find(u => u.id == id);
+            if (!usuario) return showToast("Usuario no encontrado", true);
+
+            // Llena el formulario del modal
+            document.getElementById("edit-id").value = usuario.id;
+            document.getElementById("edit-nombre").value = usuario.NombreCompleto;
+            document.getElementById("edit-correo").value = usuario.Correo;
+            document.getElementById("edit-rol").value = usuario.Rol;
+            document.getElementById("edit-clave").value = "";
+
+            // Muestra el modal
+            document.getElementById("modalEditarUsuario").style.display = "block";
+        }
+
+        function cerrarModalEditar() {
+            document.getElementById("modalEditarUsuario").style.display = "none";
+        }
+
+        // Mostrar el botón solo si hay usuario logueado
+        if (localStorage.getItem("usuario")) {
+            document.getElementById("logoutBtn").style.display = "inline-block";
+        }
+
+        // Función de cerrar sesión
+        document.getElementById("logoutBtn").addEventListener("click", function (e) {
+            e.preventDefault();
+            localStorage.removeItem("usuario"); // Borra los datos del usuario
+            alert("Sesión cerrada");
+            window.location.href = "login.html";
+        });
+
+        // Oculta todos los menús por defecto (excepto logout)
+        document.getElementById("menu-inicio").style.display = "none";
+        document.getElementById("menu-admin").style.display = "none";
+        document.getElementById("menu-carrito").style.display = "none";
+        document.getElementById("menu-productos").style.display = "none";
+        document.getElementById("menu-bodega").style.display = "none";
+
+        // Muestra/oculta según rol
+        if (usuario) {
+            if (usuario.rol === "Admin") {
+                document.getElementById("menu-inicio").style.display = "list-item";
+                document.getElementById("menu-admin").style.display = "list-item";
+                document.getElementById("menu-carrito").style.display = "list-item";
+                document.getElementById("menu-productos").style.display = "list-item";
+            } else if (usuario.rol === "Cliente") {
+                document.getElementById("menu-inicio").style.display = "list-item";
+                document.getElementById("menu-carrito").style.display = "list-item";
+                document.getElementById("menu-productos").style.display = "list-item";
+            }
+            else if (usuario.rol === "Bodeguero") {
+                document.getElementById("menu-inicio").style.display = "list-item";
+                document.getElementById("menu-bodega").style.display = "list-item";
+                document.getElementById("menu-productos").style.display = "list-item";
+            }
+        } else {
+            // Si no hay usuario, redirige a login
+            document.getElementById("menu-admin").style.display = "none";
+            document.getElementById("menu-carrito").style.display = "none";
+        }
+    </script>
+
+
+
+
+</body>
+
+</html>

@@ -76,7 +76,7 @@ INSERT INTO `productos` (`id`, `Nombre`, `Descripcion`, `Precio`, `Imagen`, `cat
 
 -- --------------------------------------------------------
 
---
+
 -- Estructura de tabla para la tabla `usuarios`
 --
 

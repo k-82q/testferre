@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito de Compras</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+
+<body class="cliente-bg">
+    <!-- Barra de navegación -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="logo">FERRE<span>MAS</span></a>
+            <ul class="navbar-nav">
+                <li id="menu-inicio"><a href="index.html" class="nav-link">Inicio</a></li>
+                <li id="menu-productos"><a href="productos.html" class="nav-link">Productos</a></li>
+                <li id="menu-carrito"><a href="carrito.html" class="active">Carrito</a></li>
+                <li id="menu-admin"><a href="admin.html" class="nav-link">Admin</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container">
+        <h1>Mi Carrito de Compras</h1>
+
+
+        <!-- Contenedor de carrito -->
+        <div class="cart-container-two-columns">
+            <!-- Productos en carrito -->
+            <div class="cart-items">
+                <h2>Productos (<span id="cantidad-productos">0</span>)</h2>
+                <div id="carrito-productos"></div>
+                <div class="text-center mt-3">
+                    <a href="productos.html" class="btn">Seguir comprando</a>
+                </div>
+            </div>
+
+            <!-- Resumen del carrito -->
+            <div class="cart-summary">
+                <h2>Resumen del pedido</h2>
+                <div class="summary-row">
+                    <span id="subtotal-label">Subtotal (0 productos)</span>
+                    <span id="subtotal-valor">$0</span>
+                </div>
+                <div class="total-row">
+                    <span>Total</span>
+                    <span id="total-valor">$0</span>
+                </div>
+                <button class="action-btn w-100" id="btn-pagar">Continuar al pago</button>
+            </div>
+        </div>
+
+        <script>
+            //Accesos segun roles
+            const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+
+            // Vistas solo para admin
+            const soloAdmin = ["admin.html"];
+            // Vistas solo para cliente
+            const soloCliente = ["carrito.html", "productos.html", "index.html"];
+
+            // Obtén el nombre del archivo actual
+            const archivo = location.pathname.split("/").pop();
+
+            if (!usuario) {
+                // Si no hay usuario logueado, redirige siempre al login
+                window.location.href = "login.html";
+            } else if (soloAdmin.includes(archivo) && usuario.rol !== "Admin") {
+                // Si intenta entrar a admin y no es admin, redirige a productos
+                window.location.href = "index.html";
+            } else if (soloCliente.includes(archivo) && usuario.rol === "Admin") {
+                // Si es admin y entra a vista de cliente, se puede dejarlo o redirigirlo a admin
+                // window.location.href = "admin.html";
+            }
+
+            // Renderiza el carrito al cargar la página
+            function renderCarrito() {
+                const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+                const contenedor = document.getElementById("carrito-productos");
+                const cantidad = document.getElementById("cantidad-productos");
+                const subtotalLabel = document.getElementById("subtotal-label");
+                const subtotalValor = document.getElementById("subtotal-valor");
+                const totalValor = document.getElementById("total-valor");
+                contenedor.innerHTML = "";
+                let totalProductos = 0;
+                let subtotal = 0;
+
+                // Si el carrito está vacío, muestra un mensaje
+                if (carrito.length === 0) {
+                    contenedor.innerHTML = "<p>No hay productos en el carrito.</p>";
+                    subtotalLabel.textContent = "Subtotal (0 productos)";
+                    subtotalValor.textContent = "$0";
+                    totalValor.textContent = "$0";
+                    cantidad.textContent = 0;
+                    return;
+                }
+                // Si hay productos, renderiza cada uno
+                carrito.forEach((producto, idx) => {
+                    const cantidadProd = producto.cantidad || 1;
+                    subtotal += Number(producto.precio) * cantidadProd;
+                    totalProductos += cantidadProd;
+                    const item = document.createElement("div");
+                    item.className = "item-row";
+                    item.innerHTML = `
+            <img src="${producto.imagen || 'assets/img/default.jpg'}" alt="${producto.nombre}" class="item-img" style="width:80px;height:80px;">
+            <div class="item-details">
+              <h3>${producto.nombre}</h3>
+              <p>${producto.descripcion || 'DES.NODISPONIBLE'}</p>
+            </div>
+            <div class="item-quantity quantity-wrapper">
+              <button class="quantity-btn" onclick="cambiarCantidad(${idx}, -1)">-</button>
+              <input type="text" value="${cantidadProd}" class="quantity-input" readonly>
+              <button class="quantity-btn" onclick="cambiarCantidad(${idx}, 1)">+</button>
+            </div>
+            <div class="item-price">$${Number(producto.precio) * cantidadProd}</div>
+            <div class="item-remove">
+              <button class="btn" onclick="eliminarDelCarrito(${idx})">✕ Eliminar</button>
+            </div>
+        `;
+                    contenedor.appendChild(item);
+                });
+
+                subtotalLabel.textContent = `Subtotal (${totalProductos} producto${totalProductos > 1 ? 's' : ''})`;
+                subtotalValor.textContent = `$${subtotal}`;
+                totalValor.textContent = `$${subtotal}`;
+                cantidad.textContent = totalProductos;
+            }
+            // Evento para el botón de pagar
+           document.getElementById("btn-pagar").addEventListener("click", async function () {
+    const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+
+    if (carrito.length === 0) {
+        alert("El carrito está vacío.");
+        return;
+    }
+
+    if (!usuario) {
+        alert("Debes iniciar sesión para pagar.");
+        return;
+    }
+
+    // Prepara los items para el backend, enviando cantidad también
+    const items = carrito.map(prod => ({
+        id: prod.id,
+        nombre: prod.nombre,
+        precio: prod.precio,
+        cantidad: prod.cantidad || 1
+    }));
+
+    try {
+        const response = await fetch("/api/pago/create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                items,
+                usuario_id: usuario.id,
+                comprador_nombre: usuario.nombre
+            })
+        });
+
+        const data = await response.json();
+        if (data.url) {
+            window.location.href = data.url; // Redirige a Mercado Pago
+        } else {
+            alert("No se pudo iniciar el pago.");
+        }
+    } catch (err) {
+        alert("Error al conectar con el servidor de pagos.");
+    }
+});
+
+
+            function cambiarCantidad(idx, cambio) {
+                let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+                if (!carrito[idx]) return;
+                carrito[idx].cantidad = (carrito[idx].cantidad || 1) + cambio;
+                if (carrito[idx].cantidad < 1) carrito[idx].cantidad = 1;
+                localStorage.setItem("carrito", JSON.stringify(carrito));
+                renderCarrito();
+            }
+
+            function eliminarDelCarrito(idx) {
+                let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+                carrito.splice(idx, 1);
+                localStorage.setItem("carrito", JSON.stringify(carrito));
+                renderCarrito();
+            }
+
+            // Renderiza al cargar la página
+            renderCarrito();
+
+            // Oculta todos los menús por defecto (excepto logout)
+            document.getElementById("menu-inicio").style.display = "none";
+            document.getElementById("menu-admin").style.display = "none";
+            document.getElementById("menu-carrito").style.display = "none";
+            document.getElementById("menu-productos").style.display = "none";
+
+            // Muestra/oculta según rol
+            if (usuario) {
+                if (usuario.rol === "Admin") {
+                    document.getElementById("menu-inicio").style.display = "list-item";
+                    document.getElementById("menu-admin").style.display = "list-item";
+                    document.getElementById("menu-carrito").style.display = "list-item";
+                    document.getElementById("menu-productos").style.display = "list-item";
+                } else if (usuario.rol === "Cliente") {
+                    document.getElementById("menu-inicio").style.display = "list-item";
+                    document.getElementById("menu-carrito").style.display = "list-item";
+                    document.getElementById("menu-productos").style.display = "list-item";
+                }
+
+            } else {
+                // Si no hay usuario, redirige a login
+                document.getElementById("menu-admin").style.display = "none";
+                document.getElementById("menu-carrito").style.display = "none";
+            }
+
+        </script>
+</body>
+
+</html>

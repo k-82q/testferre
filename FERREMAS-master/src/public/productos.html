@@ -1,0 +1,93 @@
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Catálogo de Productos | FERREMAS</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="cliente-bg">
+  <header>
+    <div class="top-bar">
+      <a href="index.html" class="logo">FERRE<span>MAS</span></a>
+      <div class="search-bar">
+        <input type="text" id="inputCategoria" placeholder="Buscar categoría...">
+        <button onclick="filtrarCategoria()">Filtrar</button>
+      </div>
+      <div class="header-tools">
+        <div class="cart-icon" onclick="window.location.href='carrito.html'">
+          Carrito
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <h2 class="section-title text-center">Catálogo de Herramientas</h2>
+    <div class="products" id="productos"></div>
+    <div class="text-center mt-4">
+      <a href="carrito.html" class="btn action-btn">Ir al carrito</a>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>FERREMAS</h3>
+        <p>Tu tienda de confianza para productos de ferretería y construcción.</p>
+      </div>
+      <div class="footer-section">
+        <h3>Contacto</h3>
+        <p>Email: contacto@ferremas.cl</p>
+        <p>Teléfono: +56 9 1234 5678</p>
+        <p>Dirección: Av. Principal 123, Santiago</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    async function cargarProductos(categoria = "") {
+      const contenedor = document.getElementById("productos");
+      contenedor.innerHTML = "<p>Cargando productos...</p>";
+      try {
+        const url = categoria ? `/api/productos/categoria/${categoria}` : "/api/productos";
+        const res = await fetch(url);
+        const productos = await res.json();
+        contenedor.innerHTML = "";
+        productos.forEach((p) => {
+          const card = document.createElement("div");
+          card.className = "product-card";
+          card.innerHTML = `
+            <img src="${p.Imagen}" alt="${p.Nombre}" class="card-img">
+            <div class="card-body">
+              <h3>${p.Nombre}</h3>
+              <p>${p.Descripcion}</p>
+              <p class="price">$${p.Precio}</p>
+            </div>
+            <div class="card-footer">
+              <button onclick="agregarAlCarrito('${p.id}', '${p.Nombre}', '${p.Descripcion}', ${p.Precio}, '${p.Imagen}')">Agregar al carrito</button>
+            </div>
+          `;
+          contenedor.appendChild(card);
+        });
+      } catch (err) {
+        contenedor.innerHTML = "<p>Error al cargar productos.</p>";
+      }
+    }
+
+    function agregarAlCarrito(id, nombre, descripcion, precio, imagen) {
+      let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+      const idx = carrito.findIndex((i) => i.id == id);
+      if (idx !== -1) carrito[idx].cantidad += 1;
+      else carrito.push({ id, nombre, descripcion, precio, imagen, cantidad: 1 });
+      localStorage.setItem("carrito", JSON.stringify(carrito));
+      alert(`${nombre} agregado al carrito`);
+    }
+
+    function filtrarCategoria() {
+      const cat = document.getElementById("inputCategoria").value.trim();
+      cargarProductos(cat);
+    }
+
+    window.onload = () => cargarProductos();
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pedidos Recibidos - Bodeguero</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .status {
+      font-weight: bold;
+    }
+    button {
+      margin: 0 5px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: white;
+    }
+    .btn-aceptar { background-color: #28a745; }
+    .btn-preparar { background-color: #ffc107; color: black; }
+    .btn-entregar { background-color: #007bff; }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>Lista de Pedidos</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID Pedido</th>
+        <th>ID Pago</th>
+        <th>Usuario ID</th>
+        <th>Nombre Comprador</th>
+        <th>Productos</th>
+        <th>Estado</th>
+        <th>Fecha</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tabla-pedidos">
+      <!-- Pedidos cargados dinámicamente -->
+    </tbody>
+  </table>
+
+  <script>
+    const API_BASE = "https://7a6eb25a022c.ngrok-free.app";
+
+    async function cargarPedidos() {
+      try {
+        const response = await fetch(`${API_BASE}/api/pedidos`);
+        if (!response.ok) throw new Error("Error al obtener pedidos");
+        const pedidos = await response.json();
+
+        const tabla = document.getElementById("tabla-pedidos");
+        tabla.innerHTML = "";
+
+        pedidos.forEach(p => {
+          const productos = JSON.parse(p.productos || "[]").map(prod => prod.nombre).join(", ");
+
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${p.id}</td>
+            <td>${p.id_pago || "-"}</td>
+            <td>${p.usuario_id ?? "-"}</td>
+            <td>${p.comprador_nombre ?? "-"}</td>
+            <td>${productos}</td>
+            <td class="status">${p.estado}</td>
+            <td>${new Date(p.fecha).toLocaleString()}</td>
+            <td>
+              <button class="btn-aceptar" ${p.estado !== "pendiente" ? "disabled" : ""} onclick="actualizarEstado(${p.id}, 'aceptado')">Aceptar</button>
+              <button class="btn-preparar" ${p.estado !== "aceptado" ? "disabled" : ""} onclick="actualizarEstado(${p.id}, 'preparado')">Preparar</button>
+              <button class="btn-entregar" ${p.estado !== "preparado" ? "disabled" : ""} onclick="actualizarEstado(${p.id}, 'entregado')">Entregar</button>
+            </td>
+          `;
+          tabla.appendChild(fila);
+        });
+      } catch (err) {
+        console.error("Error cargando pedidos:", err);
+        alert("Error cargando pedidos. Revisa la consola para más detalles.");
+      }
+    }
+
+    async function actualizarEstado(id, nuevoEstado) {
+      try {
+        const response = await fetch(`${API_BASE}/api/pedidos/${id}/estado`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado: nuevoEstado }),
+        });
+
+        if (response.ok) {
+          alert(`Pedido ${id} actualizado a "${nuevoEstado}"`);
+          cargarPedidos(); // refrescar tabla
+        } else {
+          const errorData = await response.json();
+          alert("Error actualizando estado: " + (errorData.message || "Error desconocido"));
+        }
+      } catch (err) {
+        console.error("Error al actualizar estado:", err);
+        alert("Error al actualizar estado. Revisa la consola para más detalles.");
+      }
+    }
+
+    window.onload = cargarPedidos;
+  </script>
+</body>
+</html>

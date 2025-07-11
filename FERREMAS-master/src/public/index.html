@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FERREMAS - Tu Ferretería Online</title>
+    <link rel="stylesheet" href="assets/styles_inicio.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <div class="top-bar">
+            <a href="#" class="logo">FERRE<span>MAS</span></a>
+            <div class="search-bar">
+                <input type="text" placeholder="Buscar productos...">
+                <button>Buscar</button>
+            </div>
+            <div class="header-tools">
+                <div class="cart-icon" onclick="window.location.href='carrito.html'">
+                    Carrito
+                </div>
+            </div>
+        </div>
+    </header>
+
+
+
+    <!-- Navigation -->
+    <nav>
+        <ul class="nav-menu">
+            <li id="menu-inicio"><a href="index.html">Inicio</a></li>
+            <li id="menu-productos"><a href="productos.html">Productos</a></li>
+            <li id="menu-carrito"><a href="carrito.html">Carrito</a></li>
+            <li id="menu-admin"><a href="admin.html">Admin</a></li>
+            <li id="menu-bodega"><a href="bodeguero.html">Bodega</a></li>
+            <li><a href="#" id="logoutBtn" style="display:none;">Cerrar sesión</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="home">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Bienvenido a FERREMAS</h1>
+                <p>Tu tienda de confianza para productos de ferretería y construcción</p>
+                <a href="productos.html" class="btn">Ver Productos</a>
+            </div>
+        </section>
+
+        <!-- Featured Products -->
+        <section id="products">
+            <h2 class="section-title">Productos Destacados</h2>
+            <div class="products">
+                <!-- Product 1 -->
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="assets/img/taladrobosch.jpg" alt="Taladro Bosch">
+                    </div>
+                    <div class="product-details">
+                        <h3 class="product-title">Taladro Bosch GSB 550</h3>
+                        <p class="product-price">$45.990</p>
+                        <div class="product-actions">
+                            <a href="productos.html" class="btn">Ver Detalles</a>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product 2 -->
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="assets/img/martillo.jpg" alt="Martillo Stanley">
+                    </div>
+                    <div class="product-details">
+                        <h3 class="product-title">Martillo Stanley 16oz</h3>
+                        <p class="product-price">$12.990</p>
+                        <div class="product-actions">
+                            <a href="productos.html" class="btn">Ver Detalles</a>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product 3 -->
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="assets/img/OIP.jpg" alt="Pintura Sika">
+                    </div>
+                    <div class="product-details">
+                        <h3 class="product-title">Pintura Sika 1L Blanco</h3>
+                        <p class="product-price">$8.990</p>
+                        <div class="product-actions">
+                            <a href="productos.html" class="btn">Ver Detalles</a>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product 4 -->
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="assets/img/SetLlavesMakita.jpg" alt="Set Llaves Makita">
+                    </div>
+                    <div class="product-details">
+                        <h3 class="product-title">Set Llaves Makita 15 piezas</h3>
+                        <p class="product-price">$29.990</p>
+                        <div class="product-actions">
+                            <a href="productos.html" class="btn">Ver Detalles</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Categories -->
+        <section id="categories" class="categories">
+            <h2 class="section-title">Categorías</h2>
+            <div class="category-list">
+                <a href="#category-1" class="category-item">
+                    <div class="category-image">
+                        <img src="assets/img/herramientasElec.jpg" alt="Herramientas Eléctricas">
+                    </div>
+                    <div class="category-name">Herramientas Eléctricas</div>
+                </a>
+                <a href="#category-2" class="category-item">
+                    <div class="category-image">
+                        <img src="assets/img/herramientas-manuales-.jpg" alt="Herramientas Manuales">
+                    </div>
+                    <div class="category-name">Herramientas Manuales</div>
+                </a>
+                <a href="#category-3" class="category-item">
+                    <div class="category-image">
+                        <img src="assets/img/pintura.jpg" alt="Pinturas">
+                    </div>
+                    <div class="category-name">Pinturas</div>
+                </a>
+                <a href="#category-4" class="category-item">
+                    <div class="category-image">
+                        <img src="assets/img/SetElectrico.png" alt="Material Eléctrico">
+                    </div>
+                    <div class="category-name">Material Eléctrico</div>
+                </a>
+            </div>
+        </section>
+
+        
+        <script>
+
+            const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+
+            // Vistas solo para admin
+            const soloAdmin = ["admin.html"];
+            // Vistas solo para cliente
+            const soloCliente = ["carrito.html", "productos.html", "index.html"];
+
+            // Obtén el nombre del archivo actual
+            const archivo = location.pathname.split("/").pop();
+
+            // Mostrar el botón solo si hay usuario logueado
+            if (localStorage.getItem("usuario")) {
+                document.getElementById("logoutBtn").style.display = "inline-block";
+            }
+
+            if (!usuario) {
+                // Si no hay usuario logueado, redirige siempre al login
+                window.location.href = "login.html";
+            } else if (soloAdmin.includes(archivo) && usuario.rol !== "Admin") {
+                // Si intenta entrar a admin y no es admin, redirige a productos
+                window.location.href = "index.html";
+            }
+
+            // Función de cerrar sesión
+            document.getElementById("logoutBtn").addEventListener("click", function (e) {
+                e.preventDefault();
+                localStorage.removeItem("usuario"); // Borra los datos del usuario
+                alert("Sesión cerrada");
+                window.location.href = "login.html";
+            });
+
+            // Oculta todos los menús por defecto
+            document.getElementById("menu-inicio").style.display = "none";
+            document.getElementById("menu-admin").style.display = "none";
+            document.getElementById("menu-carrito").style.display = "none";
+            document.getElementById("menu-productos").style.display = "none";
+            document.getElementById("menu-bodega").style.display = "none";
+
+            // Muestra/oculta según rol
+            if (usuario) {
+                if (usuario.rol === "Admin") {
+                    document.getElementById("menu-inicio").style.display = "list-item";
+                    document.getElementById("menu-admin").style.display = "list-item";
+                    document.getElementById("menu-carrito").style.display = "list-item";
+                    document.getElementById("menu-productos").style.display = "list-item";
+                    document.getElementById("menu-bodega").style.display = "list-item";
+                }
+                else if (usuario.rol === "Cliente") {
+                    document.getElementById("menu-inicio").style.display = "list-item";
+                    document.getElementById("menu-carrito").style.display = "list-item";
+                    document.getElementById("menu-productos").style.display = "list-item";
+                }
+                else if (usuario.rol === "Bodeguero") {
+                    document.getElementById("menu-inicio").style.display = "list-item";
+                    document.getElementById("menu-bodega").style.display = "list-item";
+                    document.getElementById("menu-productos").style.display = "list-item";
+                }
+            } else {
+                // Si no hay usuario, redirige a login
+                document.getElementById("menu-admin").style.display = "none";
+                document.getElementById("menu-carrito").style.display = "none";
+            }
+        </script>
+</body>
